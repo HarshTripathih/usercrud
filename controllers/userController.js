@@ -9,15 +9,15 @@ export const registerUser = async (req,res) => {
     const {error} = registerValidation(req.body);
     if(error) return res.status(400).json({message: error.details[0].message });
 
-    const {email, password, firstName, lastName } = req.body;
-
+    const {email, password, firstName, lastName, age, phoneNo, address } = req.body;
+    console.log(req.body);
     try{
-        const existingUser = User.findOne({email});
+        const existingUser = await User.findOne({email});
         if(existingUser) return res.status(400).json({message: 'user already exists'})
 
         const hashedPassword = await bcrypt.hash(password,10);
 
-        const newUser = new User({email, password: hashedPassword, firstName, lastName});
+        const newUser = new User({email, password: hashedPassword, firstName, lastName, age, phoneNo, address});
         await newUser.save();
         res.status(201).json({ message: 'User registered successfully' });
     }catch (error){
@@ -32,7 +32,7 @@ export const loginUser = async (req,res) => {
     const {email, password} = req.body;
 
     try{
-        const user = User.findOne({email});
+        const user = await User.findOne({email});
         if(!user) return res.status(400).json({ message: 'Invalid email or password' });
 
         const isMatch = await bcrypt.compare(password,user.password);
@@ -58,16 +58,27 @@ export const getAllUsers = async (req,res) => {
 
 export const createUser = async (req,res) => {
 
-    const {error} = userInfoValidation(req.body);
-    if(error) return res.status().json({message: error.details[0].message});
+// Validate the request body
+const { error } = userInfoValidation(req.body);
+if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+}
 
-    try{
-        const newUser = new User(req.body);
-        await newUser.save();
-        res.status(201).json({ message: 'User created successfully', user: newUser });
-    }catch(error){
-        res.status().json({message: 'server error'});
+try {
+    // If password is provided, hash it
+    if (req.body.password) {
+        req.body.password = await bcrypt.hash(req.body.password, 10);
     }
+
+    // Create a new user instance
+    const newUser = new User(req.body);
+    await newUser.save();
+
+    res.status(201).json({ message: 'User created successfully', user: newUser });
+} catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({ message: 'Server error' });
+}
 };
 
 export const getUserById = async (req, res)=>{

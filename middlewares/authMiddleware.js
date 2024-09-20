@@ -1,7 +1,7 @@
 // protect routes by checking the jwt token
 
 import jwt from 'jsonwebtoken';
-import user from '../models/userModel.js'
+import User from '../models/userModel.js'
 
 
 const authMiddleware = async (req,res,next) => {
@@ -10,7 +10,7 @@ const authMiddleware = async (req,res,next) => {
 
     try{
         const decoded = jwt.verify(token,process.env.JWT_SECRET);
-        req.user = await user.findById(decoded.userId).select('-password');
+        req.user = await User.findById(decoded.userId).select('-password');
         next();
     }catch (error){
         res.status(400).json({message: 'Invalid token'})
